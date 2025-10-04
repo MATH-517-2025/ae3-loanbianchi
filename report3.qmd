@@ -1,0 +1,410 @@
+---
+title: "MATH-517: Assignment 3"
+author: "Loan Bianchi"
+date: '2025-10-04'
+format: html
+server: shiny
+---
+
+# 1. Theoretical exercise: Local linear regression as a linear smoother
+
+We begin by recalling the definition of our estimator :
+
+$(\hat\beta_0(x), \hat\beta_1(x))
+= \arg\min_{\beta_0,\beta_1 \in \mathbb{R}}
+\sum_{i=1}^n \Big(Y_i - \beta_0 - \beta_1 (X_i - x)\Big)^2
+K\left(\frac{X_i - x}{h}\right),$
+
+Let us actually solve 1 and 2 at the same time. We know from slide 14 of the lecture notes that we want to reach that $\hat m(x) = \hat \beta_0 = \sum_{i=1}^n w_{ni}(x) Y_i,$ for $w_{ni}(x) = \frac{1}{nh}\frac{K(\frac{x - X_i}{h})(S_{n,2}(x) - (X_i - x)S_{n,1}(x))}{S_{n,0}(x)S_{n,2}(x) - S_{n,1}^2(x)}$, with $S_{n,k}(x) = \frac{1}{nh}\sum_{i=1}^n (X_i - x)^k K\left(\frac{X_i - x}{h}\right), \quad k=0,1,2,.$
+
+Now the real challenge is to understand how we get to that formula. Firstly, let us denote $f(\beta) = \sum_{i=1}^n \Big(Y_i - \beta_0 - \beta_1 (X_i - x)\Big)^2
+K\left(\frac{X_i - x}{h}\right)$, with $\beta = (\beta_0, \beta_1)$. Defining $A$ as the matrix with the $i$ th row being $A_i = (1, X_i -x)$ and $D$ the diagonal matrix with entries $D_{ii} = K\left(\frac{X_i - x}{h}\right)$, we have $f(\beta) = (Y - A\beta)^\top D (Y - A\beta)$. As a composition of a linear function with a quadratic function, $f$ is convex and we can differentiate and equate to 0 to find the minimizer.
+
+We get the following system of equations :
+
+$-2\sum_{i=1}^n \Big(Y_i - \hat\beta_0 - \hat\beta_1 (X_i - x)\Big)
+K\left(\frac{X_i - x}{h}\right) = 0$
+
+$-(X_i - x)2\sum_{i=1}^n \Big(Y_i - \hat\beta_0 - \hat\beta_1 (X_i - x)\Big)
+K\left(\frac{X_i - x}{h}\right) = 0$
+
+Or simplifying and rearranging :
+
+$\sum_{i=1}^n K(\frac{X_i - x}{h})Y_i = \sum_{i=1}^n K (\frac{X_i - x}{h})(\hat\beta_0 + \hat\beta_1 (X_i - x))  \Leftrightarrow \frac{1}{nh}\sum_{i=1}^n K(\frac{X_i - x}{h})Y_i = S_{n,0}(x) \hat \beta_0 + S_{n,1}(x)\hat\beta_1$
+
+$\sum_{i=1}^n (X_i - x) K(\frac{X_i - x}{h})Y_i = \sum_{i=1}^n (X_i - x) K (\frac{X_i - x}{h})(\hat\beta_0 + \hat\beta_1 (X_i - x)) \Leftrightarrow \frac{1}{nh}\sum_{i=1}^n (X_i - x) K(\frac{X_i - x}{h})Y_i = S_{n,1}(x) \hat \beta_0 + S_{n,2}(x)\hat\beta_1$
+
+This can be rewritten as
+
+$\begin{pmatrix} S_{0,n}(x) & S_{1,n}(x) \\ S_{1,n}(x) & S_{2,n}(x) \end{pmatrix}$ $\begin{pmatrix} \hat\beta_0 \\ \hat\beta_1 \end{pmatrix}$ = $\begin{pmatrix} \frac{1}{nh}\sum_{i=1}^n K(\frac{X_i - x}{h})Y_i \\ \frac{1}{nh}\sum_{i=1}^n (X_i - x) K(\frac{X_i - x}{h})Y_i \end{pmatrix}$ .
+
+As long as $S_{n,0}(x)S_{n,2}(x) - S_{n,1}^2(x)$ is non zero, we can use the inversion formula for a $2 \times 2$ matrix to get $\begin{pmatrix} \hat\beta_0 \\ \hat\beta_1 \end{pmatrix} = \frac{1}{S_{n,0}(x)S_{n,2}(x) - S_{n,1}^2(x)}\begin{pmatrix} S_{2,n}(x) & -S_{1,n}(x) \\ -S_{1,n}(x) & S_{0,n}(x) \end{pmatrix}\begin{pmatrix} \frac{1}{nh}\sum_{i=1}^n K(\frac{X_i - x}{h})Y_i \\ \frac{1}{nh}\sum_{i=1}^n (X_i - x) K(\frac{X_i - x}{h})Y_i \end{pmatrix}$
+
+Hence, we get $\hat \beta_0 = \sum_{i=1}^n w_{ni}(x) Y_i,$ for $w_{ni}(x) = \frac{1}{nh}\frac{K(\frac{x - X_i}{h})(S_{n,2}(x) - (X_i - x)S_{n,1}(x))}{S_{n,0}(x)S_{n,2}(x) - S_{n,1}^2(x)}$, which concludes 1 and 2.
+
+Now, let us prove that these weights indeed sum up to 1.
+
+$\sum_{i=1}^n K(\frac{x - X_i}{h})(S_{n,2}(x) - (X_i - x)S_{n,1}(x)) = nhS_{n.0}(x)S_{n,2}(x) - \sum_{i=1}^n K(\frac{x - X_i}{h})(X_i - x)S_{n,1}(x)$
+
+$= nhS_{n.0}(x)S_{n,2}(x) - S_{n,1}(x)\sum_{i=1}^n K(\frac{x - X_i}{h})(X_i - x) = nh(S_{n.0}(x)S_{n,2}(x) - S^2_{n,1}(x))$, which concludes the third point.
+
+\bigskip
+
+\bigskip
+
+# 2. Practical exercise: Global bandwidth selection
+
+**Important note** : This analysis include an interactive shiny part. To make it work, it should be enough to open the .qmd file with Rstudio and simply click on "run document" (after having installed the shiny package if not already installed). In this provided pdf, we included static plots so that the user can see what it should look like, but it's supposed to be interactive.
+
+\smallskip
+
+(I tried it on two computers to make sure that everything was fine and it worked for both so I sincerely hope it will work).
+
+\bigskip
+
+The aim of this simulation study is to analyse the behavior of the optimal bandwidth $h_{opt}$ under different conditions; with samples of different sizes $n$, with different number of blocks $N$ used to estimates the quantities that we need, as well as with different distributions. In order to study this optimal bandwidth, we will make use of the beta distribution $beta(\alpha, \beta)$ which will reveal itself very useful for that simulation study, in the sense that varying parameters $\alpha$ and $\beta$ leads to distributions that have density functions with various shapes.
+
+\bigskip
+
+This simulation was constructed in a way that allows the reader to capture a maximum of information out of the simplest possible plot. After considering many options, the one that seemed to be the most convincing was to make a shiny interactive plot, which simply shows a vertical line representing the value of $h$ with $h_{opt}$ evolving on it when varying the parameters. The reason for this quite surprising choice of a single line with a point is to make the reader focus on what really matters in that study and not get lost in many other values which can be relevant for other purposes but not for this study. Nonetheless, we decided to include the estimated $\hat \sigma^2$ next to the point, so that we can follow how the variance is estimated for the values of the parameters. It is also a way to be sure that our variance is well-estimated and that our value of $h_{opt}$ is coherent.
+
+\bigskip
+
+This simulation study will have two parts: the first one will be meant to study how our bandwidth behaves when we vary $\alpha$, $\beta$, and $n$, but we "fix" $N$ to be optimal according to the formula given in the assignment task, i.e the $N$ minimizing
+
+$$ C_p(N)=\text{RSS}(N) / \lbrace \text{RSS} (N_{\max }) / (n-5 N_{\max })\rbrace -(n-10 N), $$
+
+where
+
+$$\text{RSS}(N) =  \sum_{i=1}^n \sum_{j=1}^N \lbrace Y_i - \hat{m}\_j(X_i) \rbrace^2 \mathbb{1}_{X_i \in \mathcal{X}_j}$$
+
+and $N_{\max}= \max \lbrace \min (\lfloor n / 20\rfloor, 5 ), 1\rbrace$.
+
+\bigskip
+
+This first part is thought so that we can understand how these varying parameters impact the optimal bandwidth, knowing that we have a "good" $N$. Here, I say "good" because the paper mentioned ([Ruppert et al. (1995)](https://sites.stat.washington.edu/courses/stat527/s13/readings/Ruppert_etal_JASA_1995.pdf)) tells us that $N > 5$ can also be taken into consideration when we have a regression function $m$ with many oscillations, which should be the case in our set-ups when $x$ is small... Now, for the simplicity of this study, we assume in the first part that $N\leq 5$.
+
+\bigskip
+
+\bigskip
+
+In the second part of this study, we will still be able to make $\alpha$, $\beta$, and $n$ vary, but we can now also let $N$ vary (and allows $N>5$). It is meant to help us understand how the number of blocks in our estimation impacts the bandwidth for some fixed parameters $\alpha$, $\beta$, and $n$. The idea is to fix these parameters (at values of the reader's choice) and make $N$ vary to see how our point evolves along the line. We also thought that it could be interesting to show what the optimal $N$ is next to the point so that we can know how far from the optimal value we get when we vary $N$. In this part, we also include $\hat\theta_{22}$ next to the point. The reason for that choice will be made clearer in the analysis below.
+
+\bigskip
+
+An important precision is that the simulation is made so that when we vary $n$, we don't have a new sample every time, but we add or remove observations from our previous sample. The idea behind this is to make it more relatable to real life, where we often have a fixed sample of observations, to which we can add some observations if we get new ones over time. The idea is then to study how the bandwidth evolves when we add those new observations.
+
+\smallskip
+
+Another precision is that if $N$ doesn't divide the size of the sample, we distribute the remaining observations evenly among the blocks (so that each block gets at most one of these remaining observations)
+
+```{r setup, context="setup"}
+
+#-----------------------------------------------------
+
+
+#function that takes a sample (X, Y) and split it into N blocks. If N doesn't divide the size of the sample, we distribute the remaining observations among all blocks (so that each block gets at most one of this remaining observations)
+
+split_into_blocks <- function(sample, N){
+  
+  n <- nrow(sample)
+  general_size <- floor(n/N)
+  
+  updated_sizes <- c(rep(general_size + 1, n%%N), rep(general_size, N - n%%N))
+  
+  block_assignment <- rep(1:length(updated_sizes), times = updated_sizes)
+  
+  sample_split <- split(sample, block_assignment)
+  
+  return(sample_split)
+  
+}
+
+#-----------------------------------------------------
+
+#function that takes a splitted sample and returns estimated functions for m(x) and m''(x)
+
+m_ests <- function(sample_split){
+  
+  est_functions <- lapply(sample_split, function(block) {
+    
+    regression_model <- lm(y ~ x + I(x^2) + I(x^3) + I(x^4), data = block)
+    coefs <- coef(regression_model)
+    
+    list(
+    m_hat = function(x){
+      coefs[1] + coefs[2]*x + coefs[3]*x^2 + coefs[4]*x^3 + coefs[5]*x^4
+    }, m_hat_prime_prime = function(x){
+      2*coefs[3] + 6*coefs[4]*x + 12*coefs[5]*x^2
+    })
+  })
+  return(est_functions)
+}
+
+#-----------------------------------------------------
+
+#function that computes RSS(N) for a given sample and a given N
+
+RSS <- function(sample, N){
+  
+  n <- nrow(sample)
+  sample_split <- split_into_blocks(sample, N)
+  
+  m_hats <- lapply(m_ests(sample_split), function(both_m) both_m$m_hat)
+  
+  numerator <- 0 
+  
+  for (j in 1 : N){
+    X_j <- sample_split[[j]]$x
+    Y_j <- sample_split[[j]]$y
+    
+    m_hat_j <-m_hats[[j]]
+    
+    numerator <- numerator + sum((Y_j - m_hat_j(X_j))^2)
+  }
+  return(numerator)
+  
+}
+
+#-----------------------------------------------------
+
+#function which returns the estimated sigma^2 for a given sample and a given N
+
+sigma2_est <- function(sample, N){
+  
+  n <- nrow(sample)
+  
+  sigma2_hat <- (1/(n - 5 * N)) * RSS(sample,N)
+  
+  return(sigma2_hat)
+  
+}
+
+#-----------------------------------------------------
+
+#function which returns the estimated theta_22 for a given sample and a given N
+
+theta22_est <- function(sample, N){
+  n <- nrow(sample)
+  sample_split <- split_into_blocks(sample, N)
+  
+  m_hats_prime_prime <- lapply(m_ests(sample_split), function(both_m) both_m$m_hat_prime_prime)
+  
+  numerator <- 0 
+  
+  for (j in 1 : N){
+    X_j <- sample_split[[j]]$x
+    
+    m_hat_j_prime_prime <-m_hats_prime_prime[[j]]
+    
+    numerator <- numerator + sum((m_hat_j_prime_prime(X_j))^2)
+  }
+  
+  
+  theta22_hat <- (1/n) * numerator
+  
+  return(theta22_hat)
+  
+}
+
+#-----------------------------------------------------
+
+#function that returns the optimal bandwidth h_AMISE for a given sample and a given N
+
+h_AMISE_est <- function (sample, N){
+   n <- nrow(sample)
+  h_AMISE <- n^(-1/5)* ((((35 * sigma2_est(sample, N))/theta22_est(sample, N)))^(1/5))
+  
+  return (h_AMISE)
+  
+}
+
+
+
+
+
+```
+
+## First part of the simulation - optimal bandwidth $h_{opt}$ for different values of $\alpha$, $\beta$ and $n$ ($N$ automatically set to the optimal value)  
+
+```{r}
+#user inputs for the first shiny simulation
+
+sliderInput("n", "Sample size n:", 
+            min = 100, max = 20000, value = 10000, step = 100)
+sliderInput("alpha", "Parameter of the beta density alpha:", min = 0.5, max = 5, step = 0.5, value = 2.5)
+sliderInput("beta", "Parameter of the beta density beta:", min = 0.5, max = 5, step = 0.5, value = 2.5)
+plotOutput("distPlot")
+
+```
+
+```{r}
+#| context: server
+
+
+
+output$distPlot <- renderPlot({
+  
+  set.seed(700)
+  
+#genrating a full sample of 20000 observations and selecting the first n of them (n being the user's choice)
+  
+  full_X <- rbeta(20000, input$alpha, input$beta)
+  
+  full_epsilon <- rnorm(20000, 0, 1)
+    
+  m <- function(x){
+    sin(1/(x/3 + 0.1))
+  }
+  
+  X <- full_X[1:input$n]
+  
+  full_Y <- m(full_X) + full_epsilon
+  
+  Y <- full_Y[1:input$n]
+  
+  sample <- data.frame(x = X, y = Y)
+  
+  #computing the optimal N (N_opt)
+  
+  C_p <- function(sample, N){
+    
+    n <- nrow(sample)
+    
+    N_max <- max(min(floor(n / 20), 5), 1)  
+    
+    C_p_N <- (RSS(sample, N)/(RSS(sample, N_max)/(n - 5 * N_max))) - (n - 10 * N)
+    
+    return(C_p_N)
+    
+  }
+  
+  N_max <- max(min(floor(input$n / 20), 5), 1) 
+  
+  Ns <- 1:N_max
+  
+  costs <- sapply(Ns, function(N) C_p(sample, N))
+
+  N_opt <- Ns[which.min(costs)]
+  
+  
+  #computing the optimal bandwitdth h and the estimated sigma^2
+  
+  y <- h_AMISE_est(sample, N_opt)
+    
+  sigma2_hat <- sigma2_est(sample, N_opt)
+  
+  #plotting
+  
+  y_min <- 1/100000
+  y_max <- 0.3
+  
+  op <- par(mar = c(5, 15, 4, 35)) 
+  plot(1, y, type = "n", xlab = "", ylab = "Bandwidth h", 
+       xaxt = "n", yaxt = "n", xlim = c(0,1), ylim = c(y_min, y_max),
+       bty = "n")  
+  par(op)
+
+  segments(x0 = 0.5, y0 = y_min, x1 = 0.5, y1 = y_max, lwd = 2, col = "black")
+  
+
+  points(0.5, y, col = "red", pch = 19, cex = 2)
+  
+  
+  text(0.55, y, labels = paste0("h_opt = ", round(y, 5), "    /    N_opt = ", N_opt, "    /    Sigma2_hat = ", round(sigma2_hat,3)), pos = 4, col = "black")
+  
+})
+
+```
+
+\bigskip
+
+For the first part, we can see that if we fix $\alpha$ and $\beta$, our $h_{opt}$ decreases when we make $n$ grow. This makes sense as the more observations we have, the more points we have close to one another. We can thus make $h$ smaller so that our kernel gives more importance to points close to x, as there should be plenty of them. On the contrary, if we have less observations, we might have more variance and giving a lot of importance only to very close points might lead to a dangerous game as there might not be many of them.
+
+\bigskip
+
+Now, let us fix $n$ (say, at 10'000) and observe the behavior of $h_{opt}$ when we make the density distribution of $X$ vary.
+
+\smallskip
+
+If we fix $\alpha = 0.5$ and make $\beta$ vary, we see that the bigger the $\beta$, the smaller the $h_{opt}$. This is because when $\beta$ is big compared to $\alpha$, the $beta$ distribution is skewed near 0. Hence, as all the observations are (for most of them) concentrated in a small interval, we need smaller $h$ to captures the importance of all points close to each other, especially as our $m$ function oscillates very quickly for $x$ near 0. Interestingly, we see that when we set $\alpha = \beta = 0.5$, we get a high $h_{opt}$. A theory for this is that as our $X_i$s are concentrated both near 0 and near 1, our $m$ function oscillates very quickly for $x$ near 0 but less quickly near 1, do we kind of need to have a higher $h$ to estimate our function near $1$, but that leads to a quite poor estimate, which we can see in the quite bad estimation for the variance.
+
+\bigskip
+
+If we fix $\beta = 0.5$ and make $\alpha$ vary, we see that the bigger the $\alpha$, the bigger the $h_{opt}$. This makes sense as the more $X_i$s there are near one, the less oscillations of our function $m$ will intervene and we will need to give importance to $X_i$s a bit further from our $x$ to understand these "slow" oscillations.
+
+\bigskip
+
+If we fix $\alpha = \beta = 2.5$, we get an intermediate value, which again makes sense as most of our $X_i$s with be near 0.5 and is thus in-between the two extremes mentioned earlier.
+
+\bigskip
+
+## Second part of the simulation - optimal bandwidth $h_{opt}$ for different values of $\alpha$, $\beta$, $n$ and $N$
+
+```{r}
+
+#user inputs for the second shiny simulation
+sliderInput("n2", "Sample size n:", 
+            min = 1000, max = 20000, value = 10000, step = 100)
+sliderInput("N", "Number of blocks N:", 
+            min = 1, max = 30, value = 4, step = 1)
+sliderInput("alpha2", "Parameter of the beta density alpha:", min = 0.5, max = 5, step = 0.5, value = 2.5)
+sliderInput("beta2", "Parameter of the beta density beta:", min = 0.5, max = 5, step = 0.5, value = 2.5)
+plotOutput("distPlot2")
+```
+
+```{r}
+#| context: server
+
+output$distPlot2 <- renderPlot({
+  
+  set.seed(700)
+  
+  #genrating a full sample of 20000 observations and selecting the first n of them (n being the user's choice)
+  
+  full_X <- rbeta(20000, input$alpha2, input$beta2)
+  
+  full_epsilon <- rnorm(20000, 0, 1)
+    
+  m <- function(x){
+    sin(1/(x/3 + 0.1))
+  }
+  
+  X <- full_X[1:input$n2]
+  
+  full_Y <- m(full_X) + full_epsilon
+  
+  Y <- full_Y[1:input$n2]
+  
+  sample <- data.frame(x = X, y = Y)
+  
+  #computing the optimal bandwitdth h, the estimated sigma^2 and the estimated theta_22
+  
+  y <- h_AMISE_est(sample, input$N)
+    
+  sigma2_hat <- sigma2_est(sample, input$N)
+  theta22_hat <- theta22_est(sample, input$N)
+
+  #plotting
+  
+  y_min <- 1/100000
+  y_max <- 0.3
+  
+  op <- par(mar = c(5, 15, 4, 35)) 
+  plot(1, y, type = "n", xlab = "", ylab = "Bandwidth h", 
+       xaxt = "n", yaxt = "n", xlim = c(0,1), ylim = c(y_min, y_max),
+       bty = "n")  
+  par(op)
+
+  segments(x0 = 0.5, y0 = y_min, x1 = 0.5, y1 = y_max, lwd = 2, col = "black")
+  
+
+  points(0.5, y, col = "red", pch = 19, cex = 2)
+  
+  
+  text(0.55, y, labels = paste0("h_opt = ", round(y, 5), "    /    Sigma2_hat = ", round(sigma2_hat,3), "    /    Theta22_hat = ", round(theta22_hat,1) ), pos = 4, col = "black")
+  
+})
+```
+
+For the second part, we see that no matter what value of the parameters $n$, $\alpha$ and $\beta$ we choose, we get that the bigger the number of blocks, the smaller the $h_{opt}$. This could be explained by the fact that if we have a lot of blocks, our $\hat \theta_{22}$ will be bigger. Indeed, splitting into a lot of blocks with induce the fact that the linear regressions will be only on small parts of the sinus oscillations, making the curvature of the estimate bigger compared to if the regression were made over a lot of oscillations. A bigger $\hat\theta_{22}$ leads in turn to a smaller $h_{opt}$ if we simply look at the formula for computing $h_{opt}$.
